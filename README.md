@@ -319,10 +319,11 @@ de arredondamento típicos de `double`/`float`.
 ### CORS (integração com o front-end)
 
 A classe `CorsConfig` (`config/CorsConfig.java`) libera o consumo da API pelo
-navegador a partir do front-end Angular. Por padrão a origem permitida é
-`http://localhost:4200`, configurável via propriedade
-`app.cors.allowed-origins`. Sem essa configuração, o navegador bloquearia as
-chamadas do front por política de mesma origem (CORS).
+navegador a partir do front-end Angular. Por padrão as origens permitidas são
+`http://localhost:4200` **e** `http://127.0.0.1:4200` (no Windows o front é
+acessado por `127.0.0.1` para evitar o travamento do `localhost`/IPv6),
+configuráveis via propriedade `app.cors.allowed-origins`. Sem essa configuração,
+o navegador bloquearia as chamadas do front por política de mesma origem (CORS).
 
 ---
 
@@ -337,8 +338,8 @@ separado**: **<https://github.com/EwerthonSantana/banco-digital-frontend>**.
 - **Como subir:** com esta API rodando em `localhost:8080`, clone o repositório
   do front e rode `npm install` + `npm start` (ou `docker compose up --build`),
   acessando `http://localhost:4200`.
-- O CORS desta API já libera a origem `http://localhost:4200` (ajustável via
-  `app.cors.allowed-origins`).
+- O CORS desta API já libera as origens `http://localhost:4200` e
+  `http://127.0.0.1:4200` (ajustável via `app.cors.allowed-origins`).
 - Detalhes de execução, telas, papéis (ADMIN/USER) e arquitetura estão no README
   do front.
 
