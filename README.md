@@ -7,6 +7,11 @@ financeiras (extrato)**, com foco em **consistência sob alta concorrência**,
 
 Projeto desenvolvido como teste técnico.
 
+> **Front-end:** existe uma interface web em Angular que consome esta API
+> (login, saldo, transferência, extrato e gestão de contas). Veja o projeto em
+> [`../banco-digital-frontend`](../banco-digital-frontend) — instruções no README
+> de lá.
+
 ---
 
 ## Sumário
@@ -17,9 +22,11 @@ Projeto desenvolvido como teste técnico.
   - [Opção 2 — Local com Maven](#opção-2--local-com-maven)
 - [Documentação Swagger](#documentação-swagger)
 - [Endpoints](#endpoints)
+- [Dados pré-carregados (seed)](#dados-pré-carregados-seed)
 - [Exemplos de uso (cURL)](#exemplos-de-uso-curl)
 - [Testes](#testes)
 - [Arquitetura e decisões de design](#arquitetura-e-decisões-de-design)
+- [Front-end (Angular)](#front-end-angular)
 - [Estrutura do projeto](#estrutura-do-projeto)
 
 ---
@@ -86,8 +93,13 @@ Pré-requisitos: JDK 21 e Maven 3.9+. É preciso um PostgreSQL acessível.
    mvn spring-boot:run
    ```
 
-O Flyway cria o schema e carrega 3 contas de exemplo automaticamente no primeiro
-start.
+O Flyway cria o schema e carrega as contas de exemplo (10 clientes + 1 ADM)
+automaticamente no primeiro start.
+
+> ⚠️ **Recarregar o seed:** o conteúdo da migration `V2__seed_accounts.sql` foi
+> ampliado. Se o seu banco já tinha sido criado com uma versão anterior, o Flyway
+> acusará *checksum mismatch* ao subir. Para recarregar do zero:
+> `docker compose down -v` e depois suba novamente (ou recrie o banco/schema).
 
 ---
 
@@ -124,11 +136,29 @@ Base: `/api/v1`
 
 `POST /transfers` aceita o header opcional **`Idempotency-Key`**.
 
-Contas pré-carregadas para teste:
+---
 
-- `11111111-1111-1111-1111-111111111111` — Maria Silva (R$ 1000,00)
-- `22222222-2222-2222-2222-222222222222` — João Souza (R$ 500,00)
-- `33333333-3333-3333-3333-333333333333` — Ana Pereira (R$ 2500,00)
+## Dados pré-carregados (seed)
+
+A migration `V2__seed_accounts.sql` cria **10 contas de clientes + 1 conta de
+administrador (ADM)** com saldo alto para testes:
+
+| ID | Nome | Saldo inicial |
+|----|------|---------------|
+| `11111111-…1111` | Maria Silva | R$ 1.000,00 |
+| `22222222-…2222` | Joao Souza | R$ 500,00 |
+| `33333333-…3333` | Ana Pereira | R$ 2.500,00 |
+| `44444444-…4444` | Carlos Lima | R$ 750,00 |
+| `55555555-…5555` | Beatriz Costa | R$ 3.200,00 |
+| `66666666-…6666` | Pedro Santos | R$ 1.500,00 |
+| `77777777-…7777` | Juliana Almeida | R$ 4.800,00 |
+| `88888888-…8888` | Rafael Oliveira | R$ 980,00 |
+| `99999999-…9999` | Fernanda Rocha | R$ 6.100,00 |
+| `aaaaaaaa-…aaaa` | Lucas Martins | R$ 250,00 |
+| `dddddddd-…dddd` | **ADM** | R$ 1.000.000,00 |
+
+> No front-end, o login usa o **nome** da conta como usuário e a senha fixa
+> `123` para todos. O `ADM` tem perfil de administrador.
 
 ---
 
@@ -275,6 +305,29 @@ altera o schema), e há `CHECK` constraints (`balance >= 0`, `amount > 0`) e
 Todo dinheiro usa `BigDecimal` com escala 2 (`NUMERIC(19,2)`), evitando os erros
 de arredondamento típicos de `double`/`float`.
 
+### CORS (integração com o front-end)
+
+A classe `CorsConfig` (`config/CorsConfig.java`) libera o consumo da API pelo
+navegador a partir do front-end Angular. Por padrão a origem permitida é
+`http://localhost:4200`, configurável via propriedade
+`app.cors.allowed-origins`. Sem essa configuração, o navegador bloquearia as
+chamadas do front por política de mesma origem (CORS).
+
+---
+
+## Front-end (Angular)
+
+Há um projeto front-end que consome esta API, na pasta irmã
+[`../banco-digital-frontend`](../banco-digital-frontend).
+
+- **Stack:** Angular 21 + Angular Material, com login (mock, sem JWT),
+  visualização de saldo, transferência (com confirmação e idempotência), extrato
+  e gestão de contas (CRUD).
+- **Como subir:** com esta API rodando em `localhost:8080`, vá até a pasta do
+  front, rode `npm install` e `npm start`, e acesse `http://localhost:4200`.
+- Detalhes de execução, telas, papéis (ADMIN/USER) e arquitetura estão no README
+  do front.
+
 ---
 
 ## Estrutura do projeto
@@ -289,7 +342,7 @@ banco-digital-api
     ├── main
     │   ├── java/com/compass/bank
     │   │   ├── BankApiApplication.java
-    │   │   ├── config/            # OpenAPI (Swagger) e Async
+    │   │   ├── config/            # OpenAPI (Swagger), Async e CORS
     │   │   ├── account/           # entidade, repo, service, controller, DTOs
     │   │   ├── transfer/          # entidade, repo, service, controller, DTOs
     │   │   ├── notification/      # evento, entidade, listener assíncrono
