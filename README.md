@@ -7,10 +7,9 @@ financeiras (extrato)**, com foco em **consistência sob alta concorrência**,
 
 Projeto desenvolvido como teste técnico.
 
-> **Front-end:** existe uma interface web em Angular que consome esta API
-> (login, saldo, transferência, extrato e gestão de contas). Veja o projeto em
-> [`../banco-digital-frontend`](../banco-digital-frontend) — instruções no README
-> de lá.
+> **Front-end:** existe uma interface web em Angular (em **repositório
+> separado**) que consome esta API — login, saldo, transferência, extrato e
+> gestão de contas. Repositório: **<https://github.com/EwerthonSantana/banco-digital-frontend>**.
 
 ---
 
@@ -33,16 +32,16 @@ Projeto desenvolvido como teste técnico.
 
 ## Stack e versões
 
-| Camada                 | Tecnologia                          | Versão   |
-|------------------------|-------------------------------------|----------|
-| Linguagem              | Java                                | 21 (LTS) |
-| Framework              | Spring Boot                         | 3.5.13   |
-| Build / dependências   | Maven                               | 3.9+     |
-| Banco de dados         | PostgreSQL                          | 16       |
-| Migrations             | Flyway                              | (gerida pelo Spring Boot) |
-| Documentação           | springdoc-openapi (Swagger UI)      | 2.8.17   |
-| Banco de testes        | H2 (em memória)                     | (test)   |
-| Testes                 | JUnit 5, Mockito, AssertJ, MockMvc  | (test)   |
+| Camada               | Tecnologia                         | Versão                    |
+| -------------------- | ---------------------------------- | ------------------------- |
+| Linguagem            | Java                               | 21 (LTS)                  |
+| Framework            | Spring Boot                        | 3.5.13                    |
+| Build / dependências | Maven                              | 3.9+                      |
+| Banco de dados       | PostgreSQL                         | 16                        |
+| Migrations           | Flyway                             | (gerida pelo Spring Boot) |
+| Documentação         | springdoc-openapi (Swagger UI)     | 2.8.17                    |
+| Banco de testes      | H2 (em memória)                    | (test)                    |
+| Testes               | JUnit 5, Mockito, AssertJ, MockMvc | (test)                    |
 
 **Por que estas versões?** O requisito pedia "as versões mais recentes, porém
 estáveis e sem bugs". Optei por **Java 21 (LTS)** + **Spring Boot 3.5.x** em vez
@@ -57,8 +56,9 @@ suporte de longo prazo e ampla portabilidade entre máquinas.
 
 ### Opção 1 — Docker Compose (recomendada)
 
-Sobe o PostgreSQL **e** a aplicação já configurados, sem precisar de Java/Maven
-instalados na máquina.
+Sobe o **PostgreSQL + API** já configurados, sem precisar de Java/Maven
+instalados na máquina. (O front-end é um projeto/repositório separado — veja a
+seção [Front-end](#front-end-angular).)
 
 Pré-requisito: Docker e Docker Compose.
 
@@ -66,7 +66,18 @@ Pré-requisito: Docker e Docker Compose.
 docker compose up --build
 ```
 
-A API ficará disponível em `http://localhost:8080`. Para parar:
+Serviços disponíveis:
+
+- **API:** http://localhost:8080 (Swagger em `/swagger-ui.html`)
+- **PostgreSQL:** localhost:5432
+
+Para subir só o banco (rodando a API por fora):
+
+```bash
+docker compose up db            # apenas o PostgreSQL
+```
+
+Para parar:
 
 ```bash
 docker compose down          # mantém os dados
@@ -98,7 +109,7 @@ automaticamente no primeiro start.
 
 > ⚠️ **Recarregar o seed:** o conteúdo da migration `V2__seed_accounts.sql` foi
 > ampliado. Se o seu banco já tinha sido criado com uma versão anterior, o Flyway
-> acusará *checksum mismatch* ao subir. Para recarregar do zero:
+> acusará _checksum mismatch_ ao subir. Para recarregar do zero:
 > `docker compose down -v` e depois suba novamente (ou recrie o banco/schema).
 
 ---
@@ -119,20 +130,20 @@ Base: `/api/v1`
 
 ### Contas
 
-| Método | Caminho                  | Descrição                         |
-|--------|--------------------------|-----------------------------------|
-| POST   | `/accounts`              | Cria uma conta                    |
-| GET    | `/accounts`              | Lista contas (paginado)           |
-| GET    | `/accounts/{id}`         | Busca conta por ID                |
-| PUT    | `/accounts/{id}`         | Atualiza dados cadastrais         |
-| DELETE | `/accounts/{id}`         | Remove conta                      |
+| Método | Caminho          | Descrição                 |
+| ------ | ---------------- | ------------------------- |
+| POST   | `/accounts`      | Cria uma conta            |
+| GET    | `/accounts`      | Lista contas (paginado)   |
+| GET    | `/accounts/{id}` | Busca conta por ID        |
+| PUT    | `/accounts/{id}` | Atualiza dados cadastrais |
+| DELETE | `/accounts/{id}` | Remove conta              |
 
 ### Transferências e movimentações
 
-| Método | Caminho                          | Descrição                             |
-|--------|----------------------------------|---------------------------------------|
-| POST   | `/transfers`                     | Transfere valores entre duas contas   |
-| GET    | `/accounts/{id}/movements`       | Extrato (movimentações) da conta      |
+| Método | Caminho                    | Descrição                           |
+| ------ | -------------------------- | ----------------------------------- |
+| POST   | `/transfers`               | Transfere valores entre duas contas |
+| GET    | `/accounts/{id}/movements` | Extrato (movimentações) da conta    |
 
 `POST /transfers` aceita o header opcional **`Idempotency-Key`**.
 
@@ -143,19 +154,19 @@ Base: `/api/v1`
 A migration `V2__seed_accounts.sql` cria **10 contas de clientes + 1 conta de
 administrador (ADM)** com saldo alto para testes:
 
-| ID | Nome | Saldo inicial |
-|----|------|---------------|
-| `11111111-…1111` | Maria Silva | R$ 1.000,00 |
-| `22222222-…2222` | Joao Souza | R$ 500,00 |
-| `33333333-…3333` | Ana Pereira | R$ 2.500,00 |
-| `44444444-…4444` | Carlos Lima | R$ 750,00 |
-| `55555555-…5555` | Beatriz Costa | R$ 3.200,00 |
-| `66666666-…6666` | Pedro Santos | R$ 1.500,00 |
-| `77777777-…7777` | Juliana Almeida | R$ 4.800,00 |
-| `88888888-…8888` | Rafael Oliveira | R$ 980,00 |
-| `99999999-…9999` | Fernanda Rocha | R$ 6.100,00 |
-| `aaaaaaaa-…aaaa` | Lucas Martins | R$ 250,00 |
-| `dddddddd-…dddd` | **ADM** | R$ 1.000.000,00 |
+| ID               | Nome            | Saldo inicial   |
+| ---------------- | --------------- | --------------- |
+| `11111111-…1111` | Maria Silva     | R$ 1.000,00     |
+| `22222222-…2222` | Joao Souza      | R$ 500,00       |
+| `33333333-…3333` | Ana Pereira     | R$ 2.500,00     |
+| `44444444-…4444` | Carlos Lima     | R$ 750,00       |
+| `55555555-…5555` | Beatriz Costa   | R$ 3.200,00     |
+| `66666666-…6666` | Pedro Santos    | R$ 1.500,00     |
+| `77777777-…7777` | Juliana Almeida | R$ 4.800,00     |
+| `88888888-…8888` | Rafael Oliveira | R$ 980,00       |
+| `99999999-…9999` | Fernanda Rocha  | R$ 6.100,00     |
+| `aaaaaaaa-…aaaa` | Lucas Martins   | R$ 250,00       |
+| `dddddddd-…dddd` | **ADM**         | R$ 1.000.000,00 |
 
 > No front-end, o login usa o **nome** da conta como usuário e a senha fixa
 > `123` para todos. O `ADM` tem perfil de administrador.
@@ -238,7 +249,7 @@ requisições competem pelas mesmas contas. A estratégia adotada foi
 
 - Ao iniciar a transferência, ambas as contas são carregadas com lock. Nenhuma
   outra transação consegue ler/alterar aqueles saldos até o commit, eliminando a
-  condição de corrida clássica de *lost update*.
+  condição de corrida clássica de _lost update_.
 - **Prevenção de deadlock:** quando duas transferências envolvem o mesmo par de
   contas em sentidos opostos (A→B e B→A), travar em ordem arbitrária causaria
   deadlock. Por isso os locks são sempre adquiridos em **ordem determinística**,
@@ -285,13 +296,13 @@ Um `@RestControllerAdvice` traduz exceções de domínio em respostas HTTP
 consistentes (`ApiError` com timestamp, status, mensagem, path e erros de
 validação por campo):
 
-| Situação                         | HTTP |
-|----------------------------------|------|
-| Validação de payload             | 400  |
-| Transferência inválida           | 400  |
-| Conta não encontrada             | 404  |
+| Situação                            | HTTP |
+| ----------------------------------- | ---- |
+| Validação de payload                | 400  |
+| Transferência inválida              | 400  |
+| Conta não encontrada                | 404  |
 | Requisição duplicada (idempotência) | 409  |
-| Saldo insuficiente               | 422  |
+| Saldo insuficiente                  | 422  |
 
 ### Banco e migrations
 
@@ -317,14 +328,17 @@ chamadas do front por política de mesma origem (CORS).
 
 ## Front-end (Angular)
 
-Há um projeto front-end que consome esta API, na pasta irmã
-[`../banco-digital-frontend`](../banco-digital-frontend).
+Há um projeto front-end que consome esta API, mantido em **repositório
+separado**: **<https://github.com/EwerthonSantana/banco-digital-frontend>**.
 
 - **Stack:** Angular 21 + Angular Material, com login (mock, sem JWT),
   visualização de saldo, transferência (com confirmação e idempotência), extrato
   e gestão de contas (CRUD).
-- **Como subir:** com esta API rodando em `localhost:8080`, vá até a pasta do
-  front, rode `npm install` e `npm start`, e acesse `http://localhost:4200`.
+- **Como subir:** com esta API rodando em `localhost:8080`, clone o repositório
+  do front e rode `npm install` + `npm start` (ou `docker compose up --build`),
+  acessando `http://localhost:4200`.
+- O CORS desta API já libera a origem `http://localhost:4200` (ajustável via
+  `app.cors.allowed-origins`).
 - Detalhes de execução, telas, papéis (ADMIN/USER) e arquitetura estão no README
   do front.
 
