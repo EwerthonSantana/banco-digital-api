@@ -1,0 +1,436 @@
+{
+  "info": {
+    "name": "Banco Digital API",
+    "_postman_id": "b9f0a1c2-3d4e-4f56-8a90-bancodigital01",
+    "description": "Colecao completa da Banco Digital API: CRUD de contas, transferencias (com idempotencia) e consulta de movimentacoes. Inclui casos de sucesso e de erro (400/404/409/422). Importe e rode com a aplicacao em http://localhost:8080.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:8080", "type": "string" },
+    { "key": "sourceAccountId", "value": "11111111-1111-1111-1111-111111111111", "type": "string" },
+    { "key": "destAccountId", "value": "22222222-2222-2222-2222-222222222222", "type": "string" },
+    { "key": "createdAccountId", "value": "", "type": "string" },
+    { "key": "idempotencyKey", "value": "demo-key-001", "type": "string" }
+  ],
+  "item": [
+    {
+      "name": "Contas",
+      "item": [
+        {
+          "name": "Criar conta (201)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 201', () => pm.response.to.have.status(201));",
+                  "const body = pm.response.json();",
+                  "pm.test('retornou id', () => pm.expect(body.id).to.be.a('string'));",
+                  "pm.collectionVariables.set('createdAccountId', body.id);",
+                  "pm.test('saldo correto', () => pm.expect(Number(body.balance)).to.eql(300));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "url": { "raw": "{{baseUrl}}/api/v1/accounts", "host": ["{{baseUrl}}"], "path": ["api","v1","accounts"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Carlos Lima\",\n  \"initialBalance\": 300.00\n}"
+            }
+          }
+        },
+        {
+          "name": "Criar conta - nome em branco (400)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 400', () => pm.response.to.have.status(400));",
+                  "const body = pm.response.json();",
+                  "pm.test('tem fieldErrors', () => pm.expect(body.fieldErrors).to.be.an('array'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "url": { "raw": "{{baseUrl}}/api/v1/accounts", "host": ["{{baseUrl}}"], "path": ["api","v1","accounts"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"\",\n  \"initialBalance\": 100.00\n}"
+            }
+          }
+        },
+        {
+          "name": "Criar conta - saldo negativo (400)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 400', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "url": { "raw": "{{baseUrl}}/api/v1/accounts", "host": ["{{baseUrl}}"], "path": ["api","v1","accounts"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Saldo Invalido\",\n  \"initialBalance\": -50.00\n}"
+            }
+          }
+        },
+        {
+          "name": "Listar contas (200)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('pagina com conteudo', () => pm.expect(pm.response.json().content).to.be.an('array'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/accounts?page=0&size=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api","v1","accounts"],
+              "query": [ { "key": "page", "value": "0" }, { "key": "size", "value": "20" } ]
+            }
+          }
+        },
+        {
+          "name": "Buscar conta por ID (200)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('id confere', () => pm.expect(pm.response.json().id).to.eql(pm.collectionVariables.get('sourceAccountId')));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/v1/accounts/{{sourceAccountId}}", "host": ["{{baseUrl}}"], "path": ["api","v1","accounts","{{sourceAccountId}}"] }
+          }
+        },
+        {
+          "name": "Buscar conta inexistente (404)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 404', () => pm.response.to.have.status(404));",
+                  "pm.test('status no corpo = 404', () => pm.expect(pm.response.json().status).to.eql(404));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/v1/accounts/00000000-0000-0000-0000-000000000000", "host": ["{{baseUrl}}"], "path": ["api","v1","accounts","00000000-0000-0000-0000-000000000000"] }
+          }
+        },
+        {
+          "name": "Atualizar conta (200)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('nome atualizado', () => pm.expect(pm.response.json().name).to.eql('Carlos Lima Souza'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "url": { "raw": "{{baseUrl}}/api/v1/accounts/{{createdAccountId}}", "host": ["{{baseUrl}}"], "path": ["api","v1","accounts","{{createdAccountId}}"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Carlos Lima Souza\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Remover conta (204)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 204', () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/v1/accounts/{{createdAccountId}}", "host": ["{{baseUrl}}"], "path": ["api","v1","accounts","{{createdAccountId}}"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Transferencias",
+      "item": [
+        {
+          "name": "Transferir (201)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 201', () => pm.response.to.have.status(201));",
+                  "const body = pm.response.json();",
+                  "pm.test('retornou transferId', () => pm.expect(body.transferId).to.be.a('string'));",
+                  "pm.test('valor confere', () => pm.expect(Number(body.amount)).to.eql(150));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "url": { "raw": "{{baseUrl}}/api/v1/transfers", "host": ["{{baseUrl}}"], "path": ["api","v1","transfers"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sourceAccountId\": \"{{sourceAccountId}}\",\n  \"destinationAccountId\": \"{{destAccountId}}\",\n  \"amount\": 150.00\n}"
+            }
+          }
+        },
+        {
+          "name": "Transferir com Idempotency-Key (201)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 201', () => pm.response.to.have.status(201));",
+                  "pm.collectionVariables.set('lastTransferId', pm.response.json().transferId);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Idempotency-Key", "value": "{{idempotencyKey}}" }
+            ],
+            "url": { "raw": "{{baseUrl}}/api/v1/transfers", "host": ["{{baseUrl}}"], "path": ["api","v1","transfers"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sourceAccountId\": \"{{sourceAccountId}}\",\n  \"destinationAccountId\": \"{{destAccountId}}\",\n  \"amount\": 25.00\n}"
+            }
+          }
+        },
+        {
+          "name": "Repetir Idempotency-Key - nao duplica (201, mesmo transferId)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 201', () => pm.response.to.have.status(201));",
+                  "pm.test('mesmo transferId da requisicao anterior', () => pm.expect(pm.response.json().transferId).to.eql(pm.collectionVariables.get('lastTransferId')));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Idempotency-Key", "value": "{{idempotencyKey}}" }
+            ],
+            "url": { "raw": "{{baseUrl}}/api/v1/transfers", "host": ["{{baseUrl}}"], "path": ["api","v1","transfers"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sourceAccountId\": \"{{sourceAccountId}}\",\n  \"destinationAccountId\": \"{{destAccountId}}\",\n  \"amount\": 25.00\n}"
+            }
+          }
+        },
+        {
+          "name": "Transferir - saldo insuficiente (422)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 422', () => pm.response.to.have.status(422));",
+                  "pm.test('status no corpo = 422', () => pm.expect(pm.response.json().status).to.eql(422));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "url": { "raw": "{{baseUrl}}/api/v1/transfers", "host": ["{{baseUrl}}"], "path": ["api","v1","transfers"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sourceAccountId\": \"{{sourceAccountId}}\",\n  \"destinationAccountId\": \"{{destAccountId}}\",\n  \"amount\": 9999999.00\n}"
+            }
+          }
+        },
+        {
+          "name": "Transferir - origem igual ao destino (400)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 400', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "url": { "raw": "{{baseUrl}}/api/v1/transfers", "host": ["{{baseUrl}}"], "path": ["api","v1","transfers"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sourceAccountId\": \"{{sourceAccountId}}\",\n  \"destinationAccountId\": \"{{sourceAccountId}}\",\n  \"amount\": 10.00\n}"
+            }
+          }
+        },
+        {
+          "name": "Transferir - valor negativo (400)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 400', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "url": { "raw": "{{baseUrl}}/api/v1/transfers", "host": ["{{baseUrl}}"], "path": ["api","v1","transfers"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sourceAccountId\": \"{{sourceAccountId}}\",\n  \"destinationAccountId\": \"{{destAccountId}}\",\n  \"amount\": -10.00\n}"
+            }
+          }
+        },
+        {
+          "name": "Transferir - conta inexistente (404)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 404', () => pm.response.to.have.status(404));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "url": { "raw": "{{baseUrl}}/api/v1/transfers", "host": ["{{baseUrl}}"], "path": ["api","v1","transfers"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sourceAccountId\": \"99999999-9999-9999-9999-999999999999\",\n  \"destinationAccountId\": \"{{destAccountId}}\",\n  \"amount\": 10.00\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Movimentacoes",
+      "item": [
+        {
+          "name": "Extrato da conta (200)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('content e array', () => pm.expect(pm.response.json().content).to.be.an('array'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/accounts/{{sourceAccountId}}/movements?page=0&size=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api","v1","accounts","{{sourceAccountId}}","movements"],
+              "query": [ { "key": "page", "value": "0" }, { "key": "size", "value": "20" } ]
+            }
+          }
+        },
+        {
+          "name": "Extrato - conta inexistente (404)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 404', () => pm.response.to.have.status(404));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/accounts/00000000-0000-0000-0000-000000000000/movements",
+              "host": ["{{baseUrl}}"],
+              "path": ["api","v1","accounts","00000000-0000-0000-0000-000000000000","movements"]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
