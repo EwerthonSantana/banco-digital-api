@@ -92,10 +92,6 @@ public class Account {
         return balance;
     }
 
-    public void setBalance(BigDecimal balance) {
-        this.balance = balance;
-    }
-
     public long getVersion() {
         return version;
     }
