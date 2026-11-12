@@ -1,122 +1,122 @@
 # Banco Digital API
 
-API REST para um banco digital fictício. Permite o **CRUD de contas**, a
-**transferência de fundos entre contas** e a **consulta de movimentações
-financeiras (extrato)**, com foco em **consistência sob alta concorrência**,
-**resiliência** e **performance**.
+REST API for a fictional digital bank. It supports **account CRUD**,
+**fund transfers between accounts**, and **transaction history (statements)**,
+with a focus on **consistency under high concurrency**, **resilience**, and
+**performance**.
 
-Projeto desenvolvido como teste técnico.
+Originally built as a technical challenge.
 
-> **Front-end:** existe uma interface web em Angular (em **repositório
-> separado**) que consome esta API — login, saldo, transferência, extrato e
-> gestão de contas. Repositório: **<https://github.com/EwerthonSantana/banco-digital-frontend>**.
+> **Front end:** an Angular web app (in a **separate repository**) consumes this
+> API — login, balance, transfers, statements, and account management.
+> Repository: **<https://github.com/EwerthonSantana/banco-digital-frontend>**.
 
 ---
 
-## Sumário
+## Table of contents
 
-- [Stack e versões](#stack-e-versões)
-- [Como rodar](#como-rodar)
-  - [Opção 1 — Docker Compose (recomendada)](#opção-1--docker-compose-recomendada)
-  - [Opção 2 — Local com Maven](#opção-2--local-com-maven)
-- [Documentação Swagger](#documentação-swagger)
+- [Tech stack and versions](#tech-stack-and-versions)
+- [How to run](#how-to-run)
+  - [Option 1 — Docker Compose (recommended)](#option-1--docker-compose-recommended)
+  - [Option 2 — Local with Maven](#option-2--local-with-maven)
+- [Swagger documentation](#swagger-documentation)
 - [Endpoints](#endpoints)
-- [Dados pré-carregados (seed)](#dados-pré-carregados-seed)
-- [Exemplos de uso (cURL)](#exemplos-de-uso-curl)
-- [Testes](#testes)
-- [Arquitetura e decisões de design](#arquitetura-e-decisões-de-design)
-- [Front-end (Angular)](#front-end-angular)
-- [Estrutura do projeto](#estrutura-do-projeto)
+- [Seed data](#seed-data)
+- [Usage examples (cURL)](#usage-examples-curl)
+- [Tests](#tests)
+- [Architecture and design decisions](#architecture-and-design-decisions)
+- [Front end (Angular)](#front-end-angular)
+- [Project structure](#project-structure)
 
 ---
 
-## Stack e versões
+## Tech stack and versions
 
-| Camada               | Tecnologia                         | Versão                    |
-| -------------------- | ---------------------------------- | ------------------------- |
-| Linguagem            | Java                               | 21 (LTS)                  |
-| Framework            | Spring Boot                        | 3.5.13                    |
-| Build / dependências | Maven                              | 3.9+                      |
-| Banco de dados       | PostgreSQL                         | 16                        |
-| Migrations           | Flyway                             | (gerida pelo Spring Boot) |
-| Documentação         | springdoc-openapi (Swagger UI)     | 2.8.17                    |
-| Banco de testes      | H2 (em memória)                    | (test)                    |
-| Testes               | JUnit 5, Mockito, AssertJ, MockMvc | (test)                    |
+| Layer                | Technology                         | Version                     |
+| -------------------- | ---------------------------------- | --------------------------- |
+| Language             | Java                               | 21 (LTS)                    |
+| Framework            | Spring Boot                        | 3.5.13                      |
+| Build / dependencies | Maven                              | 3.9+                        |
+| Database             | PostgreSQL                         | 16                          |
+| Migrations           | Flyway                             | (managed by Spring Boot)    |
+| Documentation        | springdoc-openapi (Swagger UI)     | 2.8.17                      |
+| Test database        | H2 (in-memory)                     | (test)                      |
+| Testing              | JUnit 5, Mockito, AssertJ, MockMvc | (test)                      |
 
-**Por que estas versões?** O requisito pedia "as versões mais recentes, porém
-estáveis e sem bugs". Optei por **Java 21 (LTS)** + **Spring Boot 3.5.x** em vez
-do recém-lançado Spring Boot 4.x: a linha 3.5 é madura, amplamente adotada e tem
-total compatibilidade com o ecossistema (springdoc, Flyway, drivers), reduzindo
-o risco de incompatibilidades. Java 21 é a versão LTS mais recente, garantindo
-suporte de longo prazo e ampla portabilidade entre máquinas.
+**Why these versions?** The requirement called for "the latest stable, bug-free
+versions". I chose **Java 21 (LTS)** + **Spring Boot 3.5.x** over the newly
+released Spring Boot 4.x: the 3.5 line is mature, widely adopted, and fully
+compatible with the ecosystem (springdoc, Flyway, drivers), which reduces the
+risk of incompatibilities. Java 21 is the latest LTS release, ensuring long-term
+support and broad portability across machines.
 
 ---
 
-## Como rodar
+## How to run
 
-### Opção 1 — Docker Compose (recomendada)
+### Option 1 — Docker Compose (recommended)
 
-Sobe o **PostgreSQL + API** já configurados, sem precisar de Java/Maven
-instalados na máquina. (O front-end é um projeto/repositório separado — veja a
-seção [Front-end](#front-end-angular).)
+Starts **PostgreSQL + the API**, fully configured, with no need to install
+Java/Maven locally. (The front end is a separate project/repository — see the
+[Front end](#front-end-angular) section.)
 
-Pré-requisito: Docker e Docker Compose.
+Prerequisites: Docker and Docker Compose.
 
 ```bash
 docker compose up --build
 ```
 
-Serviços disponíveis:
+Available services:
 
-- **API:** http://localhost:8080 (Swagger em `/swagger-ui.html`)
+- **API:** http://localhost:8080 (Swagger at `/swagger-ui.html`)
 - **PostgreSQL:** localhost:5432
 
-Para subir só o banco (rodando a API por fora):
+To start only the database (running the API outside Docker):
 
 ```bash
-docker compose up db            # apenas o PostgreSQL
+docker compose up db            # PostgreSQL only
 ```
 
-Para parar:
+To stop:
 
 ```bash
-docker compose down          # mantém os dados
-docker compose down -v       # remove também o volume do banco
+docker compose down          # keeps the data
+docker compose down -v       # also removes the database volume
 ```
 
-### Opção 2 — Local com Maven
+### Option 2 — Local with Maven
 
-Pré-requisitos: JDK 21 e Maven 3.9+. É preciso um PostgreSQL acessível.
+Prerequisites: JDK 21 and Maven 3.9+. You need a reachable PostgreSQL instance.
 
-1. Suba apenas o banco (via Docker) ou use um PostgreSQL próprio:
+1. Start just the database (via Docker) or use your own PostgreSQL:
 
    ```bash
    docker run --name bank-db -e POSTGRES_DB=bankdb -e POSTGRES_USER=bank \
      -e POSTGRES_PASSWORD=bank -p 5432:5432 -d postgres:16-alpine
    ```
 
-2. (Opcional) ajuste as variáveis de ambiente — veja `.env.example`. Os valores
-   padrão já apontam para o banco acima.
+2. (Optional) adjust the environment variables — see `.env.example`. The default
+   values already point to the database above.
 
-3. Rode a aplicação:
+3. Run the application:
 
    ```bash
    mvn spring-boot:run
    ```
 
-O Flyway cria o schema e carrega as contas de exemplo (10 clientes + 1 ADM)
-automaticamente no primeiro start.
+Flyway creates the schema and loads the sample accounts (10 customers + 1 admin)
+automatically on first startup.
 
-> ⚠️ **Recarregar o seed:** o conteúdo da migration `V2__seed_accounts.sql` foi
-> ampliado. Se o seu banco já tinha sido criado com uma versão anterior, o Flyway
-> acusará _checksum mismatch_ ao subir. Para recarregar do zero:
-> `docker compose down -v` e depois suba novamente (ou recrie o banco/schema).
+> ⚠️ **Reloading the seed:** the `V2__seed_accounts.sql` migration was expanded.
+> If your database was created with an earlier version, Flyway will report a
+> _checksum mismatch_ on startup. To reload from scratch, run
+> `docker compose down -v` and start again (or recreate the database/schema).
 
 ---
 
-## Documentação Swagger
+## Swagger documentation
 
-Com a aplicação no ar:
+With the application running:
 
 - **Swagger UI:** http://localhost:8080/swagger-ui.html
 - **OpenAPI JSON:** http://localhost:8080/v3/api-docs
@@ -126,56 +126,56 @@ Com a aplicação no ar:
 
 ## Endpoints
 
-Base: `/api/v1`
+Base path: `/api/v1`
 
-### Contas
+### Accounts
 
-| Método | Caminho          | Descrição                 |
+| Method | Path             | Description               |
 | ------ | ---------------- | ------------------------- |
-| POST   | `/accounts`      | Cria uma conta            |
-| GET    | `/accounts`      | Lista contas (paginado)   |
-| GET    | `/accounts/{id}` | Busca conta por ID        |
-| PUT    | `/accounts/{id}` | Atualiza dados cadastrais |
-| DELETE | `/accounts/{id}` | Remove conta              |
+| POST   | `/accounts`      | Create an account         |
+| GET    | `/accounts`      | List accounts (paginated) |
+| GET    | `/accounts/{id}` | Get an account by ID      |
+| PUT    | `/accounts/{id}` | Update account details    |
+| DELETE | `/accounts/{id}` | Delete an account         |
 
-### Transferências e movimentações
+### Transfers and transactions
 
-| Método | Caminho                    | Descrição                           |
-| ------ | -------------------------- | ----------------------------------- |
-| POST   | `/transfers`               | Transfere valores entre duas contas |
-| GET    | `/accounts/{id}/movements` | Extrato (movimentações) da conta    |
+| Method | Path                       | Description                          |
+| ------ | -------------------------- | ------------------------------------ |
+| POST   | `/transfers`               | Transfer funds between two accounts  |
+| GET    | `/accounts/{id}/movements` | Account statement (transactions)     |
 
-`POST /transfers` aceita o header opcional **`Idempotency-Key`**.
-
----
-
-## Dados pré-carregados (seed)
-
-A migration `V2__seed_accounts.sql` cria **10 contas de clientes + 1 conta de
-administrador (ADM)** com saldo alto para testes:
-
-| ID               | Nome            | Saldo inicial   |
-| ---------------- | --------------- | --------------- |
-| `11111111-…1111` | Maria Silva     | R$ 1.000,00     |
-| `22222222-…2222` | Joao Souza      | R$ 500,00       |
-| `33333333-…3333` | Ana Pereira     | R$ 2.500,00     |
-| `44444444-…4444` | Carlos Lima     | R$ 750,00       |
-| `55555555-…5555` | Beatriz Costa   | R$ 3.200,00     |
-| `66666666-…6666` | Pedro Santos    | R$ 1.500,00     |
-| `77777777-…7777` | Juliana Almeida | R$ 4.800,00     |
-| `88888888-…8888` | Rafael Oliveira | R$ 980,00       |
-| `99999999-…9999` | Fernanda Rocha  | R$ 6.100,00     |
-| `aaaaaaaa-…aaaa` | Lucas Martins   | R$ 250,00       |
-| `dddddddd-…dddd` | **ADM**         | R$ 1.000.000,00 |
-
-> No front-end, o login usa o **nome** da conta como usuário e a senha fixa
-> `123` para todos. O `ADM` tem perfil de administrador.
+`POST /transfers` accepts the optional **`Idempotency-Key`** header.
 
 ---
 
-## Exemplos de uso (cURL)
+## Seed data
 
-Criar conta:
+The `V2__seed_accounts.sql` migration creates **10 customer accounts + 1
+administrator (ADM) account** with a high balance for testing:
+
+| ID               | Name            | Initial balance  |
+| ---------------- | --------------- | ---------------- |
+| `11111111-…1111` | Maria Silva     | R$ 1,000.00      |
+| `22222222-…2222` | Joao Souza      | R$ 500.00        |
+| `33333333-…3333` | Ana Pereira     | R$ 2,500.00      |
+| `44444444-…4444` | Carlos Lima     | R$ 750.00        |
+| `55555555-…5555` | Beatriz Costa   | R$ 3,200.00      |
+| `66666666-…6666` | Pedro Santos    | R$ 1,500.00      |
+| `77777777-…7777` | Juliana Almeida | R$ 4,800.00      |
+| `88888888-…8888` | Rafael Oliveira | R$ 980.00        |
+| `99999999-…9999` | Fernanda Rocha  | R$ 6,100.00      |
+| `aaaaaaaa-…aaaa` | Lucas Martins   | R$ 250.00        |
+| `dddddddd-…dddd` | **ADM**         | R$ 1,000,000.00  |
+
+> In the front end, login uses the account **name** as the username and the fixed
+> password `123` for everyone. `ADM` has the administrator role.
+
+---
+
+## Usage examples (cURL)
+
+Create an account:
 
 ```bash
 curl -X POST http://localhost:8080/api/v1/accounts \
@@ -183,7 +183,7 @@ curl -X POST http://localhost:8080/api/v1/accounts \
   -d '{"name": "Carlos Lima", "initialBalance": 300.00}'
 ```
 
-Transferir (com idempotência):
+Transfer (with idempotency):
 
 ```bash
 curl -X POST http://localhost:8080/api/v1/transfers \
@@ -196,7 +196,7 @@ curl -X POST http://localhost:8080/api/v1/transfers \
       }'
 ```
 
-Consultar extrato:
+Get a statement:
 
 ```bash
 curl http://localhost:8080/api/v1/accounts/11111111-1111-1111-1111-111111111111/movements
@@ -204,148 +204,148 @@ curl http://localhost:8080/api/v1/accounts/11111111-1111-1111-1111-111111111111/
 
 ---
 
-## Testes
+## Tests
 
 ```bash
 mvn test
 ```
 
-Cobertura dos testes (foco em regras de negócio):
+Test coverage (focused on business rules):
 
-- **AccountServiceTest** — CRUD e cenário de conta inexistente.
-- **TransferServiceTest** — transferência bem-sucedida (débito/crédito + evento),
-  saldo insuficiente, origem igual ao destino, conta inexistente e
-  **idempotência** (chave repetida não reprocessa).
-- **NotificationServiceTest** — gera notificação para remetente e destinatário.
-- **AccountControllerTest** (`@WebMvcTest`) — camada web: 201 na criação,
-  validação (400) e mapeamento de erro 404.
-- **AccountRepositoryTest** (`@DataJpaTest`) — consulta com lock pessimista.
-- **BankApiApplicationTests** — smoke test de subida do contexto.
+- **AccountServiceTest** — CRUD and the non-existent account scenario.
+- **TransferServiceTest** — successful transfer (debit/credit + event),
+  insufficient balance, same source and destination, non-existent account, and
+  **idempotency** (a repeated key is not reprocessed).
+- **NotificationServiceTest** — generates notifications for sender and recipient.
+- **AccountControllerTest** (`@WebMvcTest`) — web layer: 201 on creation,
+  validation (400), and 404 error mapping.
+- **AccountRepositoryTest** (`@DataJpaTest`) — query with a pessimistic lock.
+- **BankApiApplicationTests** — context startup smoke test.
 
-Os testes usam **H2 em memória** (schema gerado pelo Hibernate, Flyway desligado
-no perfil de teste), portanto **não exigem PostgreSQL** para rodar.
+Tests use **in-memory H2** (schema generated by Hibernate, Flyway disabled in the
+test profile), so they **don't require PostgreSQL** to run.
 
 ---
 
-## Arquitetura e decisões de design
+## Architecture and design decisions
 
-### Organização por feature (package-by-feature)
+### Package-by-feature
 
-O código é agrupado por domínio (`account`, `transfer`, `notification`) em vez de
-por camada técnica. Isso mantém coesão alta, facilita navegação e deixa claro o
-limite de cada contexto.
+Code is grouped by domain (`account`, `transfer`, `notification`) rather than
+by technical layer. This keeps cohesion high, makes navigation easier, and makes
+each context's boundary clear.
 
-Em cada feature há a divisão clássica em camadas: **Controller** (HTTP/REST) →
-**Service** (regras de negócio e transações) → **Repository** (persistência) →
-**Entity** (domínio). DTOs (`record` do Java 21) isolam o contrato da API das
-entidades JPA, evitando vazamento do modelo interno.
+Each feature follows the classic layering: **Controller** (HTTP/REST) →
+**Service** (business rules and transactions) → **Repository** (persistence) →
+**Entity** (domain). DTOs (Java 21 `record`s) isolate the API contract from the
+JPA entities, preventing the internal model from leaking.
 
-### Consistência sob alta concorrência — lock pessimista
+### Consistency under high concurrency — pessimistic locking
 
-O ponto central do teste é transferir dinheiro com segurança quando várias
-requisições competem pelas mesmas contas. A estratégia adotada foi
-**lock pessimista de escrita** (`@Lock(PESSIMISTIC_WRITE)`, traduzido para
-`SELECT ... FOR UPDATE` no PostgreSQL):
+The core challenge is moving money safely when multiple requests compete for the
+same accounts. The chosen strategy is a **pessimistic write lock**
+(`@Lock(PESSIMISTIC_WRITE)`, translated to `SELECT ... FOR UPDATE` in
+PostgreSQL):
 
-- Ao iniciar a transferência, ambas as contas são carregadas com lock. Nenhuma
-  outra transação consegue ler/alterar aqueles saldos até o commit, eliminando a
-  condição de corrida clássica de _lost update_.
-- **Prevenção de deadlock:** quando duas transferências envolvem o mesmo par de
-  contas em sentidos opostos (A→B e B→A), travar em ordem arbitrária causaria
-  deadlock. Por isso os locks são sempre adquiridos em **ordem determinística**,
-  ordenando pelos UUIDs das contas (`min`/`max`). Toda transação trava primeiro a
-  mesma conta, evitando o ciclo de espera.
-- A transação `@Transactional` garante atomicidade: débito, crédito e registro da
-  transferência são confirmados juntos, ou nada é.
+- When a transfer starts, both accounts are loaded with a lock. No other
+  transaction can read/modify those balances until commit, eliminating the
+  classic _lost update_ race condition.
+- **Deadlock prevention:** when two transfers involve the same pair of accounts in
+  opposite directions (A→B and B→A), locking in arbitrary order would cause a
+  deadlock. That's why locks are always acquired in a **deterministic order**,
+  sorted by account UUID (`min`/`max`). Every transaction locks the same account
+  first, avoiding the wait cycle.
+- The `@Transactional` boundary guarantees atomicity: debit, credit, and the
+  transfer record are committed together, or not at all.
 
-Como segunda barreira, a entidade `Account` possui `@Version` (lock otimista),
-protegendo contra escritas concorrentes vindas por outros caminhos.
+As a second safeguard, the `Account` entity has `@Version` (optimistic locking),
+protecting against concurrent writes coming through other paths.
 
-> **Por que pessimista e não otimista?** Em transferências o conflito sobre o
-> mesmo saldo é esperado e frequente sob alta concorrência. O lock pessimista
-> evita o desperdício de reprocessamento/retries que o otimista exigiria nesse
-> cenário. A regra de saldo (`balance >= 0`) ainda é reforçada por um
-> `CHECK` constraint no banco.
+> **Why pessimistic rather than optimistic?** In transfers, conflicts on the same
+> balance are expected and frequent under high concurrency. Pessimistic locking
+> avoids the wasted reprocessing/retries that optimistic locking would require in
+> this scenario. The balance rule (`balance >= 0`) is also enforced by a
+> `CHECK` constraint in the database.
 
-### Idempotência
+### Idempotency
 
-Transferências aceitam um header `Idempotency-Key`. A chave é gravada com índice
-**único** na tabela `transfers`. Se a mesma chave chegar novamente (ex.: retry de
-rede), a API devolve a transferência original **sem reprocessar**, evitando
-débito duplicado. Uma corrida real entre duas requisições idênticas é barrada
-pelo índice único e tratada como `409 Conflict`.
+Transfers accept an `Idempotency-Key` header. The key is stored with a **unique**
+index in the `transfers` table. If the same key arrives again (e.g., a network
+retry), the API returns the original transfer **without reprocessing it**,
+preventing a duplicate debit. A real race between two identical requests is
+blocked by the unique index and handled as `409 Conflict`.
 
-### Notificações — evento assíncrono e desacoplado
+### Notifications — asynchronous and decoupled events
 
-Após o commit da transferência, um `TransferCompletedEvent` é publicado. O
-`NotificationService` o consome com:
+After the transfer commits, a `TransferCompletedEvent` is published. The
+`NotificationService` consumes it with:
 
-- `@TransactionalEventListener(AFTER_COMMIT)` — a notificação só dispara **depois**
-  que a transferência foi de fato persistida; um rollback não gera notificação
-  "fantasma".
-- `@Async` (pool dedicado) — o envio roda fora da thread da transferência, sem
-  impactar a latência do caminho crítico.
+- `@TransactionalEventListener(AFTER_COMMIT)` — the notification fires only
+  **after** the transfer has actually been persisted; a rollback never produces a
+  "ghost" notification.
+- `@Async` (dedicated pool) — sending runs outside the transfer thread, without
+  impacting critical-path latency.
 
-O envio em si é **simulado por log** e a notificação é persistida (trilha de
-auditoria). Em produção, bastaria trocar a implementação por um gateway real de
-e-mail/SMS/push — o ponto de extensão já está isolado.
+Sending itself is **simulated via logging**, and the notification is persisted
+(audit trail). In production, you would only need to swap the implementation for
+a real email/SMS/push gateway — the extension point is already isolated.
 
-### Tratamento de erros padronizado
+### Standardized error handling
 
-Um `@RestControllerAdvice` traduz exceções de domínio em respostas HTTP
-consistentes (`ApiError` com timestamp, status, mensagem, path e erros de
-validação por campo):
+A `@RestControllerAdvice` translates domain exceptions into consistent HTTP
+responses (`ApiError` with timestamp, status, message, path, and per-field
+validation errors):
 
-| Situação                            | HTTP |
+| Situation                           | HTTP |
 | ----------------------------------- | ---- |
-| Validação de payload                | 400  |
-| Transferência inválida              | 400  |
-| Conta não encontrada                | 404  |
-| Requisição duplicada (idempotência) | 409  |
-| Saldo insuficiente                  | 422  |
+| Payload validation                  | 400  |
+| Invalid transfer                    | 400  |
+| Account not found                   | 404  |
+| Duplicate request (idempotency)     | 409  |
+| Insufficient balance                | 422  |
 
-### Banco e migrations
+### Database and migrations
 
-O schema é versionado com **Flyway** (`db/migration`), garantindo evolução
-controlada e reprodutível. O Hibernate roda em modo `validate` em produção (não
-altera o schema), e há `CHECK` constraints (`balance >= 0`, `amount > 0`) e
-índices nas colunas usadas pelo extrato.
+The schema is versioned with **Flyway** (`db/migration`), ensuring controlled and
+reproducible evolution. Hibernate runs in `validate` mode in production (it never
+alters the schema), and there are `CHECK` constraints (`balance >= 0`,
+`amount > 0`) and indexes on the columns used by the statement queries.
 
-### Valores monetários
+### Monetary values
 
-Todo dinheiro usa `BigDecimal` com escala 2 (`NUMERIC(19,2)`), evitando os erros
-de arredondamento típicos de `double`/`float`.
+All money uses `BigDecimal` with scale 2 (`NUMERIC(19,2)`), avoiding the rounding
+errors typical of `double`/`float`.
 
-### CORS (integração com o front-end)
+### CORS (front-end integration)
 
-A classe `CorsConfig` (`config/CorsConfig.java`) libera o consumo da API pelo
-navegador a partir do front-end Angular. Por padrão as origens permitidas são
-`http://localhost:4200` **e** `http://127.0.0.1:4200` (no Windows o front é
-acessado por `127.0.0.1` para evitar o travamento do `localhost`/IPv6),
-configuráveis via propriedade `app.cors.allowed-origins`. Sem essa configuração,
-o navegador bloquearia as chamadas do front por política de mesma origem (CORS).
-
----
-
-## Front-end (Angular)
-
-Há um projeto front-end que consome esta API, mantido em **repositório
-separado**: **<https://github.com/EwerthonSantana/banco-digital-frontend>**.
-
-- **Stack:** Angular 21 + Angular Material, com login (mock, sem JWT),
-  visualização de saldo, transferência (com confirmação e idempotência), extrato
-  e gestão de contas (CRUD).
-- **Como subir:** com esta API rodando em `localhost:8080`, clone o repositório
-  do front e rode `npm install` + `npm start` (ou `docker compose up --build`),
-  acessando `http://localhost:4200`.
-- O CORS desta API já libera as origens `http://localhost:4200` e
-  `http://127.0.0.1:4200` (ajustável via `app.cors.allowed-origins`).
-- Detalhes de execução, telas, papéis (ADMIN/USER) e arquitetura estão no README
-  do front.
+The `CorsConfig` class (`config/CorsConfig.java`) allows the Angular front end to
+call the API from the browser. By default, the allowed origins are
+`http://localhost:4200` **and** `http://127.0.0.1:4200` (on Windows the front end
+is accessed via `127.0.0.1` to avoid `localhost`/IPv6 hangs), configurable via the
+`app.cors.allowed-origins` property. Without this configuration, the browser would
+block the front end's calls under the same-origin policy (CORS).
 
 ---
 
-## Estrutura do projeto
+## Front end (Angular)
+
+A front-end project consumes this API and lives in a **separate repository**:
+**<https://github.com/EwerthonSantana/banco-digital-frontend>**.
+
+- **Stack:** Angular 21 + Angular Material, with login (mocked, no JWT), balance
+  view, transfers (with confirmation and idempotency), statements, and account
+  management (CRUD).
+- **How to run:** with this API running on `localhost:8080`, clone the front-end
+  repository and run `npm install` + `npm start` (or `docker compose up --build`),
+  then open `http://localhost:4200`.
+- This API's CORS configuration already allows `http://localhost:4200` and
+  `http://127.0.0.1:4200` (adjustable via `app.cors.allowed-origins`).
+- Run instructions, screens, roles (ADMIN/USER), and architecture details are in
+  the front end's README.
+
+---
+
+## Project structure
 
 ```
 banco-digital-api
@@ -357,26 +357,26 @@ banco-digital-api
     ├── main
     │   ├── java/com/compass/bank
     │   │   ├── BankApiApplication.java
-    │   │   ├── config/            # OpenAPI (Swagger), Async e CORS
-    │   │   ├── account/           # entidade, repo, service, controller, DTOs
-    │   │   ├── transfer/          # entidade, repo, service, controller, DTOs
-    │   │   ├── notification/      # evento, entidade, listener assíncrono
-    │   │   └── common/exception/  # exceções e handler global
+    │   │   ├── config/            # OpenAPI (Swagger), Async, and CORS
+    │   │   ├── account/           # entity, repo, service, controller, DTOs
+    │   │   ├── transfer/          # entity, repo, service, controller, DTOs
+    │   │   ├── notification/      # event, entity, async listener
+    │   │   └── common/exception/  # exceptions and global handler
     │   └── resources
     │       ├── application.yml
     │       └── db/migration/      # V1 schema, V2 seed
     └── test
-        ├── java/com/compass/bank/ # testes unitários e de fatia
-        └── resources/application.properties  # perfil de teste (H2)
+        ├── java/com/compass/bank/ # unit and slice tests
+        └── resources/application.properties  # test profile (H2)
 ```
 
 ---
 
-## Observações finais
+## Final notes
 
-- `open-in-view` está desabilitado (boa prática: evita queries lazy fora da
-  camada de serviço).
-- Actuator exposto para `health`, `info` e `metrics`, úteis para
-  observabilidade/resiliência.
-- A paginação dos endpoints de listagem e extrato usa o padrão `Pageable` do
-  Spring Data (`?page=0&size=20&sort=...`).
+- `open-in-view` is disabled (best practice: avoids lazy queries outside the
+  service layer).
+- Actuator is exposed for `health`, `info`, and `metrics`, useful for
+  observability/resilience.
+- Pagination on the list and statement endpoints uses Spring Data's `Pageable`
+  convention (`?page=0&size=20&sort=...`).
